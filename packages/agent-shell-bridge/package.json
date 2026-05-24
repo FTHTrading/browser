@@ -1,0 +1,19 @@
+{
+  "name": "@unykorn/agent-shell-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "IPC bridge between the native DG Browser shell (CEF / Chromium) and the sandboxed Node sidecar that runs @unykorn/agent-bridge. JSON-RPC 2.0 over Unix domain socket / Windows named pipe. The shell never imports the agent code directly; it runs in its own process with its own permissions.",
+  "license": "SEE LICENSE IN ../../LICENSE",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": { "node": ">=20" }
+}

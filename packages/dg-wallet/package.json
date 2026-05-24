@@ -1,0 +1,25 @@
+{
+  "name": "@unykorn/dg-wallet",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DG Wallet — dual identity layer for the Digital Giant Browser. DG-native BIP-39 account stored in the OS keychain, plus an EIP-1193 bridge for existing wallets. Sign-request drawer, per-domain permissions, network switcher, D1-mirrored permission digests.",
+  "license": "SEE LICENSE IN ../../LICENSE",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./dg-native": { "types": "./dist/dg_native.d.ts", "import": "./dist/dg_native.js" },
+    "./eip1193-bridge": { "types": "./dist/eip1193_bridge.d.ts", "import": "./dist/eip1193_bridge.js" },
+    "./permissions": { "types": "./dist/permissions.d.ts", "import": "./dist/permissions.js" }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": { "node": ">=20" }
+}
