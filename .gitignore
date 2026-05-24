@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+vendor/cef/
+cef_binary*/
+
+# Build outputs
+dist/
+build/
+out/
+*.exe
+*.dmg
+*.msix
+*.app
+*.deb
+*.rpm
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Secrets — NEVER commit
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials.json
+wallet*.json
+*_ledger*
+OneDrive*/
+
+# Logs & temp
+*.log
+tmp/
+.cache/
+coverage/
+
+# Chromium / CEF artifacts
+chromium/
+.gclient
+.sccache/
+
+# Extension dev
+packages/extension/icons/*.png
+!packages/extension/icons/.gitkeep

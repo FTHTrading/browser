@@ -1,0 +1,169 @@
+:root {
+  --bg: #0f1419;
+  --panel: #1a2332;
+  --text: #e7ecf3;
+  --muted: #8b9cb3;
+  --accent: #38bdf8;
+  --ok: #4ade80;
+  --bad: #f87171;
+  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  padding: 12px;
+  min-width: 320px;
+}
+
+.dev-banner {
+  font-size: 11px;
+  margin: 0 0 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #1e293b;
+  border: 1px dashed var(--muted);
+}
+
+.storm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.storm-header h1 {
+  margin: 0;
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+}
+
+.pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--panel);
+}
+
+.pill-ok {
+  color: var(--ok);
+  border: 1px solid var(--ok);
+}
+
+.pill-bad {
+  color: var(--bad);
+  border: 1px solid var(--bad);
+}
+
+.pill-unknown {
+  color: var(--muted);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.tab.active {
+  background: var(--accent);
+  color: #0f1419;
+  font-weight: 600;
+}
+
+.panel {
+  display: none;
+}
+
+.panel.active {
+  display: block;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+textarea,
+input[type='search'] {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 8px 0;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #2d3a4d;
+  background: var(--panel);
+  color: var(--text);
+}
+
+button {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  background: var(--accent);
+  color: #0f1419;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.log {
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--panel);
+  border-radius: 6px;
+  font-size: 11px;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.doi-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.doi-row a {
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.results {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+}
+
+.results li {
+  padding: 8px;
+  margin-bottom: 6px;
+  background: var(--panel);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.results .title {
+  font-weight: 600;
+}
+
+.results .path {
+  color: var(--muted);
+  word-break: break-all;
+}
