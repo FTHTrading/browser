@@ -20,6 +20,9 @@ Auth:     Bearer JWT (TBD; current state: open for design endpoints)
 Spec:     https://digitalgiant.xyz/docs/specs/openapi.yaml
 GraphQL:  https://digitalgiant.xyz/docs/specs/schema.graphql
 Activate: https://api.digitalgiant.xyz/api/agent/activation_pack
+Prompt:   https://api.digitalgiant.xyz/api/agent/system_prompt  (canonical, baked-in)
+Prompt source: https://digitalgiant.xyz/agents/SYSTEM_PROMPT.md  (markdown, human-readable)
+Prompt version: 2026-05-24.1
 ```
 
 All schemas live at `https://digitalgiant.xyz/schemas/{name}.schema.json`. JSON Schema 2020-12. Stable URLs; cache-friendly.
@@ -30,9 +33,10 @@ All schemas live at `https://digitalgiant.xyz/schemas/{name}.schema.json`. JSON 
 
 ### On startup
 1. `GET https://api.digitalgiant.xyz/api/agent/activation_pack`
-   - Hydrate the OpenClaw agent system prompt from `system_prompt`.
+   - Hydrate the OpenClaw agent system prompt from `system_prompt` (canonical, baked into the Worker from `agents/SYSTEM_PROMPT.md` — no network round-trip on the server side, deterministic across redeploys).
    - Cache `schemas_inline` (returned by the pack) locally — already validated.
    - Bind `function_map` to your tool router.
+   - Pin `version` returned by the pack (`DG_AGENT_VERSION`) so you can detect prompt drift.
 
 2. Verify `runtime.backend == "Cloudflare Workers + D1"`. If not, surface a soft warning to the user; do not block.
 
