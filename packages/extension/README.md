@@ -1,51 +1,74 @@
-# Sovereign Browser — Extension (DEV PROTOTYPE ONLY)
+# Sovereign Browser — Extension
 
-> **Not the product.** Sovereign Browser ships as an **installable CEF/Electron shell**. This Chrome MV3 folder is for **gateway/corpus demos** only.
+The shipping agent surface, loadable into any Chromium-based browser today (Chrome, Edge, Brave, Arc, Vivaldi). White-label. Sovereign-only.
 
-Minimal Chrome MV3 side panel. Do not use in client GTM or status as "Phase 0 product."
+## Three pills, three sovereign components
+
+| Pill | What it means | When red |
+| --- | --- | --- |
+| **api** | `api.digitalgiant.xyz` — validator + persistence + connectors | check internet |
+| **local** | Local LLM runtime (Ollama / OpenClaw) — does the actual generation | `ollama serve` not running |
+| **gw** | OpenClaw gateway (optional, for browser-use tools) | gateway not running — that's fine |
+
+The Sovereign tab does NOT require the gateway. It only needs the api + local pills green.
 
 ## Prerequisites
 
-- Chromium browser (Chrome / Edge)
-- OpenClaw gateway on **http://127.0.0.1:18789**
+1. **Ollama** running locally. Default URL: `http://127.0.0.1:11434`.
 
-```powershell
-curl http://127.0.0.1:18789/health
-```
+   ```bash
+   ollama serve            # in one terminal
+   ollama pull qwen2.5:32b # in another (or any capable JSON-mode model)
+   ```
 
-## Load unpacked (dev)
+   To swap models or runtime, edit `config.js` → `localRuntime`.
 
-1. Open `chrome://extensions`
-2. Enable **Developer mode**
+2. A Chromium browser.
+
+## Load (dev)
+
+1. `chrome://extensions`
+2. Toggle **Developer mode**
 3. **Load unpacked** → select this folder: `packages/extension`
-4. Pin **Sovereign Browser (Dev Prototype)** to the toolbar
-5. Click the icon → side panel opens
+4. Pin **Sovereign Browser** to the toolbar
+5. Click the icon → side panel opens on the right
 
-## Configuration
+## The Sovereign tab
+
+The shipping product surface. Pick a function from the dropdown, edit the spec JSON, then:
+
+- **Scaffold** — Worker mints an id, stamps audit, marks missing required keys `_unverified: true`. Deterministic, no LLM.
+- **Generate (local)** — Local runtime (Ollama / OpenClaw) fills the schema. JSON-only. Two automatic retries on parse failure. Never falls back to a third party.
+- **Validate** — POST the draft back to the Worker. Required-key check, audit stamping, id minting if missing.
+- **Persist** — Write to D1 via `/api/wallets`, `/api/settlements`, `/api/instruments/energy`, etc.
+
+The four buttons map to the deterministic policy classes in `packages/agent-bridge`: scaffold/generate = `design` + `interpret`, validate/persist = `persist`.
+
+## Config
 
 Edit `config.js`:
 
-| Key | Default |
-|-----|---------|
-| `gatewayUrl` | `http://127.0.0.1:18789` |
-| `corpusManifestHint` | `vault/intel/CORPUS_MANIFEST.json` (docs only until gateway tool exists) |
+```js
+export const SOVEREIGN_CONFIG = {
+  dgApiBase: 'https://api.digitalgiant.xyz',
+  gatewayUrl: 'http://127.0.0.1:18789',
+  localRuntime: {
+    baseUrl: 'http://127.0.0.1:11434/v1', // Ollama default
+    model: 'qwen2.5:32b',
+  },
+};
+```
 
-## Tabs
+Swap-in examples:
 
-| Tab | Status |
-|-----|--------|
-| **Chat** | Gateway health probe only; send disabled |
-| **Research** | Stub search + DOI links; real RAG via `research_corpus_query` |
+- LM Studio: `baseUrl: 'http://127.0.0.1:1234/v1'`
+- OpenClaw LLM bridge: `baseUrl: 'http://127.0.0.1:18789/v1'`
+- A different Ollama model: `model: 'llama3.1:70b-instruct'`
 
-## Next steps
+## What this extension does not do
 
-1. Register OpenClaw tool `research_corpus_query`
-2. Extension `fetch` → gateway tool endpoint for manifest search
-3. LPS-1 verify button → ref impl spawn
-4. Approval modal before pay/submit/download
-5. x402 gate on privileged actions → `paid.unykorn.org`
+- It does **not** call Anthropic, OpenAI, or any other third-party LLM.
+- It does **not** ship with any API key for a hosted model.
+- It does **not** require the OpenClaw gateway for the Sovereign tab; the gateway is for browser-use automation (Chat tab, future).
 
-## Docs
-
-- [docs/01-PRODUCT-CANON.md](../../docs/01-PRODUCT-CANON.md)
-- [docs/08-ROADMAP.md](../../docs/08-ROADMAP.md)
+If `local` pill is red, the design tier is dead — that's the design.

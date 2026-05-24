@@ -27,17 +27,26 @@ body {
   border: 1px dashed var(--muted);
 }
 
+.sovereign-header,
 .storm-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
+  gap: 8px;
 }
 
+.sovereign-header h1,
 .storm-header h1 {
   margin: 0;
   font-size: 1.1rem;
   letter-spacing: 0.04em;
+}
+
+.sovereign-header .pills {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .pill {
@@ -97,7 +106,8 @@ body {
 }
 
 textarea,
-input[type='search'] {
+input[type='search'],
+select {
   width: 100%;
   box-sizing: border-box;
   margin: 8px 0;
@@ -106,7 +116,26 @@ input[type='search'] {
   border: 1px solid #2d3a4d;
   background: var(--panel);
   color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
 }
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.row button {
+  flex: 1 1 auto;
+  min-width: 80px;
+  font-size: 12px;
+  padding: 6px 8px;
+}
+
+#fn-status[data-kind='ok'] { color: var(--ok); }
+#fn-status[data-kind='bad'] { color: var(--bad); }
 
 button {
   padding: 8px 12px;

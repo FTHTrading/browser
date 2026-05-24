@@ -1,15 +1,20 @@
 /**
- * Tiered model router for the sovereign-agent function map.
+ * Sovereign-only model router for the agent function map.
  *
- * Policy (chosen 2026-05-24):
- *   - Design endpoints  → Claude Sonnet 4.5/4.6 via the Worker
- *                         (high-stakes, schema-strict, audit-of-record).
- *   - interpret_page    → local Ollama / Qwen / OpenClaw-native
- *                         (high-volume, page-shaped, sovereign).
+ * Policy (locked 2026-05-24):
+ *   - EVERY function routes to a local runtime.
+ *   - No Anthropic. No OpenAI. No third-party LLM in the hot path.
+ *   - The Worker is a schema validator + persistence layer + connector
+ *     proxy only. Zero LLM dependency server-side.
  *
- * The router never bypasses validation. The Worker remains the validator of
- * record for every persisted object — local interpretation is only allowed
- * to produce *intermediate* structures that the design tier later refines.
+ * Supported local runtimes (any OpenAI-compatible chat-completions endpoint):
+ *   - Ollama       (http://127.0.0.1:11434/v1, models: qwen2.5, llama3.1, ...)
+ *   - OpenClaw     (the gateway's own LLM bridge if compiled with one)
+ *   - LM Studio    (http://127.0.0.1:1234/v1)
+ *   - vLLM / TGI   (any OAI-compat server)
+ *
+ * If no local runtime is reachable, calls fail loudly with a clear message.
+ * They do NOT silently fall through to a third party.
  */
 
 import {
@@ -51,12 +56,12 @@ export interface ModelRouterOptions {
 }
 
 const DEFAULT_ROUTES: Record<DGFunctionName, RouteTarget> = {
-  generate_wallet: "dg_worker_sonnet",
-  generate_settlement_plan: "dg_worker_sonnet",
-  generate_energy_instrument: "dg_worker_sonnet",
-  generate_carbon_instrument: "dg_worker_sonnet",
-  generate_registry_entry: "dg_worker_sonnet",
-  link_entities: "dg_worker_sonnet",
+  generate_wallet: "local_runtime",
+  generate_settlement_plan: "local_runtime",
+  generate_energy_instrument: "local_runtime",
+  generate_carbon_instrument: "local_runtime",
+  generate_registry_entry: "local_runtime",
+  link_entities: "local_runtime",
   interpret_page: "local_runtime",
 };
 
@@ -74,26 +79,30 @@ export class ModelRouter {
   }
 
   routeFor(fn: DGFunctionName): RouteTarget {
-    const target = this.routes[fn];
-    if (target === "local_runtime" && !this.local) return "dg_worker_sonnet";
-    return target;
+    return this.routes[fn];
   }
 
   async dispatch<T = unknown>(payload: DGGenerateSpec): Promise<DGGenerateResult<T>> {
-    const target = this.routeFor(payload.function);
-    if (target === "dg_worker_sonnet") {
-      const r = await this.dg.generate<T>(payload);
-      return { ...r, routed_to: "dg_worker_sonnet" };
+    if (!this.local) {
+      throw new Error(
+        "ModelRouter: sovereign-only mode requires a local runtime. " +
+          "Configure { local: { baseUrl, model } } pointing at Ollama, OpenClaw, " +
+          "or any OpenAI-compatible local server. Third-party LLM fallback is disabled.",
+      );
     }
     return await this.dispatchLocal<T>(payload);
   }
 
   /**
-   * Local-runtime dispatch. Only used for interpret_page by default.
+   * Local-runtime dispatch.
    *
    * Contract: the local model must return a JSON object on a single line or
-   * inside a ```json fence. Anything else is treated as a parse failure and
-   * the request is escalated to the Worker tier.
+   * inside a ```json fence. On parse failure, retries once with a stricter
+   * "JSON ONLY" reminder. No third-party escalation.
+   *
+   * After local generation succeeds, the result is POSTed to the Worker's
+   * matching validation endpoint to confirm the JSON conforms to the
+   * canonical schema. The Worker is validator-of-record, never generator.
    */
   private async dispatchLocal<T>(payload: DGGenerateSpec): Promise<DGGenerateResult<T>> {
     if (!this.local) throw new Error("ModelRouter: local runtime not configured");
@@ -124,33 +133,85 @@ export class ModelRouter {
         signal: controller.signal,
       });
       if (!r.ok) {
-        return await this.escalate<T>(payload, `local ${r.status}`);
+        const body = await safeText(r);
+        throw new Error(
+          `Local runtime ${this.local.baseUrl} returned ${r.status}: ${body || "(empty body)"}. ` +
+            "Sovereign-only mode does not fall back to a third party. " +
+            "Start Ollama (`ollama serve`) or your OpenClaw runtime.",
+        );
       }
       const json = (await r.json()) as {
         choices?: Array<{ message?: { content?: string } }>;
       };
       raw = json.choices?.[0]?.message?.content ?? "";
-    } catch (err) {
-      return await this.escalate<T>(payload, `local error: ${(err as Error).message}`);
     } finally {
       clearTimeout(timer);
     }
 
-    const parsed = tryParseJson(raw);
+    let parsed = tryParseJson(raw);
     if (parsed === undefined) {
-      return await this.escalate<T>(payload, "local non-json response");
+      // One retry with a stricter reminder. Still local. Still sovereign.
+      parsed = await this.retryLocal(payload, prompt, userMessage);
+    }
+    if (parsed === undefined) {
+      throw new Error(
+        "Local runtime did not return valid JSON after two attempts. " +
+          "Sovereign-only mode does not fall back to a third party. " +
+          "Inspect the local model output or switch to a more capable local model.",
+      );
     }
     return {
       function: payload.function,
       object: parsed as T,
-      validation: { validated: false, errors: ["validated locally; not yet checked against schema"] },
+      validation: { validated: false, errors: ["locally generated; validate via persistence endpoint"] },
       routed_to: `local_runtime:${this.local.model}`,
     };
   }
 
-  private async escalate<T>(payload: DGGenerateSpec, reason: string): Promise<DGGenerateResult<T>> {
-    const r = await this.dg.generate<T>(payload);
-    return { ...r, routed_to: `dg_worker_sonnet (escalated: ${reason})` };
+  private async retryLocal(
+    _payload: DGGenerateSpec,
+    prompt: string,
+    firstUserMessage: string,
+  ): Promise<unknown> {
+    if (!this.local) return undefined;
+    const fetchImpl = this.local.fetchImpl ?? globalThis.fetch;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.local.timeoutMs ?? 60_000);
+    try {
+      const r = await fetchImpl(`${this.local.baseUrl.replace(/\/$/, "")}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json",
+          ...(this.local.apiKey ? { authorization: `Bearer ${this.local.apiKey}` } : {}),
+        },
+        body: JSON.stringify({
+          model: this.local.model,
+          messages: [
+            { role: "system", content: prompt },
+            { role: "user", content: firstUserMessage },
+            {
+              role: "system",
+              content:
+                "Your previous response was not valid JSON. Respond with ONLY a single JSON object. " +
+                "No prose. No markdown fences. No commentary.",
+            },
+          ],
+          temperature: 0,
+          response_format: { type: "json_object" },
+        }),
+        signal: controller.signal,
+      });
+      if (!r.ok) return undefined;
+      const json = (await r.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      return tryParseJson(json.choices?.[0]?.message?.content ?? "");
+    } catch {
+      return undefined;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   private async ensurePrompt(): Promise<string> {
@@ -184,5 +245,13 @@ function tryParseJson(raw: string): unknown {
       }
     }
     return undefined;
+  }
+}
+
+async function safeText(r: Response): Promise<string> {
+  try {
+    return await r.text();
+  } catch {
+    return "";
   }
 }

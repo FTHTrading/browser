@@ -3,25 +3,63 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Sovereign Browser — DONK Sidecar</title>
+    <title>Sovereign Browser</title>
     <link rel="stylesheet" href="sidepanel.css" />
   </head>
   <body>
-    <header class="storm-header">
-      <h1>DONK</h1>
-      <span id="gateway-pill" class="pill pill-unknown">gateway …</span>
+    <header class="sovereign-header">
+      <h1>Sovereign</h1>
+      <div class="pills">
+        <span id="dg-pill" class="pill pill-unknown">api …</span>
+        <span id="local-pill" class="pill pill-unknown">local …</span>
+        <span id="gateway-pill" class="pill pill-unknown">gw …</span>
+      </div>
     </header>
 
-    <p class="dev-banner muted">Dev prototype — native shell is ship path</p>
+    <p class="dev-banner muted">Sovereign-only. No third-party LLM. Validator at api.digitalgiant.xyz.</p>
 
     <nav class="tabs" role="tablist">
-      <button type="button" class="tab active" data-tab="chat" role="tab">Chat</button>
+      <button type="button" class="tab active" data-tab="sovereign" role="tab">Sovereign</button>
+      <button type="button" class="tab" data-tab="chat" role="tab">Chat</button>
       <button type="button" class="tab" data-tab="research" role="tab">Research</button>
     </nav>
 
-    <section id="panel-chat" class="panel active" role="tabpanel">
-      <p class="muted">OpenClaw gateway stub — wire agent messages in M1.</p>
-      <textarea id="chat-input" rows="3" placeholder="Ask DONK…"></textarea>
+    <!-- Sovereign tab: the 7-function agent surface -->
+    <section id="panel-sovereign" class="panel active" role="tabpanel">
+      <label class="muted" for="fn-select">Function</label>
+      <select id="fn-select">
+        <option value="generate_wallet">generate_wallet</option>
+        <option value="generate_settlement_plan">generate_settlement_plan</option>
+        <option value="generate_energy_instrument">generate_energy_instrument</option>
+        <option value="generate_carbon_instrument">generate_carbon_instrument</option>
+        <option value="generate_registry_entry">generate_registry_entry</option>
+        <option value="link_entities">link_entities</option>
+        <option value="interpret_page">interpret_page</option>
+      </select>
+
+      <label class="muted" for="fn-spec">Spec (JSON)</label>
+      <textarea id="fn-spec" rows="6" spellcheck="false">{
+  "owner_type": "entity",
+  "chain": "ethereum",
+  "asset_symbol": "USDC",
+  "asset_class": "stablecoin"
+}</textarea>
+
+      <div class="row">
+        <button type="button" id="fn-scaffold">Scaffold</button>
+        <button type="button" id="fn-generate">Generate (local)</button>
+        <button type="button" id="fn-validate" disabled>Validate</button>
+        <button type="button" id="fn-persist" disabled>Persist</button>
+      </div>
+
+      <p class="muted" id="fn-status">Idle.</p>
+      <pre id="fn-output" class="log"></pre>
+    </section>
+
+    <!-- Chat tab: gateway-driven free-form (later) -->
+    <section id="panel-chat" class="panel" role="tabpanel" hidden>
+      <p class="muted">Free-form chat lands once the OpenClaw gateway exposes a chat tool. For now use the Sovereign tab.</p>
+      <textarea id="chat-input" rows="3" placeholder="Ask the gateway…"></textarea>
       <button type="button" id="chat-send" disabled>Send (soon)</button>
       <pre id="chat-log" class="log"></pre>
     </section>
@@ -29,28 +67,14 @@
     <section id="panel-research" class="panel" role="tabpanel" hidden>
       <p class="muted" id="corpus-stats">Corpus manifest — loading…</p>
       <div class="doi-row">
-        <a
-          id="doi-lps1"
-          href="https://doi.org/10.5281/zenodo.18646886"
-          target="_blank"
-          rel="noreferrer"
-          >LPS-1 (18646886)</a
-        >
-        <a
-          id="doi-genesis"
-          href="https://doi.org/10.5281/zenodo.18729652"
-          target="_blank"
-          rel="noreferrer"
-          >Genesis (18729652)</a
-        >
+        <a id="doi-lps1" href="https://doi.org/10.5281/zenodo.18646886" target="_blank" rel="noreferrer">LPS-1 (18646886)</a>
+        <a id="doi-genesis" href="https://doi.org/10.5281/zenodo.18729652" target="_blank" rel="noreferrer">Genesis (18729652)</a>
       </div>
       <input type="search" id="research-query" placeholder="Search corpus tags…" />
       <button type="button" id="research-search">Search (stub)</button>
       <ul id="research-results" class="results"></ul>
       <p class="muted">
-        <a id="donkeys-link" href="https://donkeys.xxxiii.io/" target="_blank" rel="noreferrer"
-          >donkeys.xxxiii.io</a
-        >
+        <a id="donkeys-link" href="https://donkeys.xxxiii.io/" target="_blank" rel="noreferrer">donkeys.xxxiii.io</a>
         · LPS-1 verify — M2
       </p>
     </section>

@@ -1,20 +1,25 @@
 {
   "manifest_version": 3,
-  "name": "Sovereign Browser (Dev Prototype)",
-  "version": "0.0.1",
-  "description": "Unykorn agentic browser side panel — OpenClaw gateway + research corpus. NOT the shipped product.",
+  "name": "Sovereign Browser",
+  "version": "0.4.0",
+  "description": "Sovereign Browser — Digital Giant agent surface. Local-runtime only (Ollama / OpenClaw). No third-party LLM.",
   "permissions": ["sidePanel", "storage", "activeTab"],
   "host_permissions": [
     "http://127.0.0.1:18789/*",
-    "http://localhost:18789/*"
+    "http://localhost:18789/*",
+    "http://127.0.0.1:11434/*",
+    "http://localhost:11434/*",
+    "https://api.digitalgiant.xyz/*",
+    "https://digitalgiant.xyz/*"
   ],
   "action": {
-    "default_title": "Open DONK Sidecar"
+    "default_title": "Sovereign Browser"
   },
   "side_panel": {
     "default_path": "sidepanel.html"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   }
 }
